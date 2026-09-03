@@ -1,19 +1,7 @@
 import { useAuth } from './hooks/useAuth';
-import { useSpheres } from './hooks/useSpheres';
-import { useEnsureDefaultSpheres } from './hooks/useEnsureDefaultSpheres';
 import { LoginPage } from './pages/LoginPage';
 import { AccessDeniedPage } from './pages/AccessDeniedPage';
-
-function SignedInPlaceholder({ uid }: { uid: string }) {
-  const { spheres, loaded } = useSpheres(uid);
-  useEnsureDefaultSpheres(uid, spheres, loaded);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-cream text-ink">
-      {loaded ? `Сфер: ${spheres.length}` : 'Загрузка…'}
-    </div>
-  );
-}
+import { Shell } from './Shell';
 
 export default function App() {
   const { status, user } = useAuth();
@@ -32,5 +20,5 @@ export default function App() {
     return <AccessDeniedPage />;
   }
 
-  return <SignedInPlaceholder uid={user!.uid} />;
+  return <Shell uid={user!.uid} />;
 }
