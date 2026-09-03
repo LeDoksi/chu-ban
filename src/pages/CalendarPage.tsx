@@ -42,13 +42,25 @@ export function CalendarPage({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <button onClick={() => setCursor(new Date(year, month - 1, 1))} className="px-2 text-ink/60">
+        <button
+          onClick={() => {
+            setCursor(new Date(year, month - 1, 1));
+            setSelectedDay(null);
+          }}
+          className="px-2 text-ink/60"
+        >
           ←
         </button>
         <p className="font-medium text-ink">
           {cursor.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
         </p>
-        <button onClick={() => setCursor(new Date(year, month + 1, 1))} className="px-2 text-ink/60">
+        <button
+          onClick={() => {
+            setCursor(new Date(year, month + 1, 1));
+            setSelectedDay(null);
+          }}
+          className="px-2 text-ink/60"
+        >
           →
         </button>
       </div>
