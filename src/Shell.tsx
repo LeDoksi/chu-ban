@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Sprout, Bell } from 'lucide-react';
 import type { Tab, Task } from './types';
 import { useSpheres } from './hooks/useSpheres';
 import { useEnsureDefaultSpheres } from './hooks/useEnsureDefaultSpheres';
@@ -35,7 +36,13 @@ export function Shell({ uid }: { uid: string }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-cream pb-24">
-      <main className="flex-1 overflow-y-auto p-4">
+      <header className="flex items-center gap-2 px-4 pb-2 pt-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sage/15">
+          <Sprout size={16} strokeWidth={2} className="text-sage" />
+        </div>
+        <span className="text-[15px] font-semibold tracking-tight text-ink">Chu-ban</span>
+      </header>
+      <main className="flex-1 overflow-y-auto p-4 pt-0">
         {tab === 'tasks' && (
           <TasksPage
             tasks={tasks}
@@ -52,9 +59,10 @@ export function Shell({ uid }: { uid: string }) {
           <div className="space-y-4">
             <button
               onClick={() => requestPushPermission()}
-              className="w-full rounded-2xl bg-dusty-blue/20 px-4 py-3 text-sm font-medium text-ink"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-dusty-blue/20 px-4 py-3 text-sm font-medium text-ink"
             >
-              🔔 Включить уведомления
+              <Bell size={18} strokeWidth={1.75} />
+              Включить уведомления
             </button>
             <SettingsPage uid={uid} spheres={spheres} />
           </div>

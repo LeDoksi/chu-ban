@@ -32,6 +32,7 @@ export function TaskForm({
     initialTask?.deadline ? toDatetimeLocalValue(initialTask.deadline) : ''
   );
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // ponytail: reminders need a task id, so on create the picker only appears
   // after reopening the saved task in edit mode. Add an inline "save then keep
@@ -44,6 +45,7 @@ export function TaskForm({
     e.preventDefault();
     if (!title.trim() || !sphereId) return;
     setSaving(true);
+    setError(null);
     const input = {
       type,
       sphereId,
@@ -52,13 +54,18 @@ export function TaskForm({
       deadline,
       parentEpicId: initialTask ? initialTask.parentEpicId : parentEpicId,
     };
-    if (mode === 'create') {
-      await addTask(uid, input);
-    } else if (initialTask) {
-      await updateTask(uid, initialTask.id, input);
+    try {
+      if (mode === 'create') {
+        await addTask(uid, input);
+      } else if (initialTask) {
+        await updateTask(uid, initialTask.id, input);
+      }
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    onDone();
   }
 
   return (
@@ -123,6 +130,12 @@ export function TaskForm({
 
       {mode === 'edit' && (
         <ReminderPicker deadline={deadline} reminders={reminders} onAdd={addReminder} onRemove={deleteReminder} />
+      )}
+
+      {error && (
+        <p className="rounded-xl bg-terracotta/15 px-3 py-2 text-sm text-ink">
+          Не сохранилось: {error}. Попробуй ещё раз.
+        </p>
       )}
 
       <div className="flex gap-2 pt-2">
