@@ -9,6 +9,7 @@ import { TaskForm } from './components/TaskForm';
 import { TasksPage } from './pages/TasksPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { StatsPage } from './pages/StatsPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 type EditorState =
   | { mode: 'create'; parentEpicId: string | null }
@@ -41,7 +42,7 @@ export function Shell({ uid }: { uid: string }) {
         )}
         {tab === 'calendar' && <CalendarPage tasks={tasks} spheres={spheres} onOpenEdit={openEdit} />}
         {tab === 'stats' && <StatsPage tasks={tasks} spheres={spheres} />}
-        {tab === 'settings' && <p className="text-ink">Настройки скоро здесь появятся.</p>}
+        {tab === 'settings' && <SettingsPage uid={uid} spheres={spheres} />}
       </main>
       <BottomNav active={tab} onChange={setTab} />
       {editor && (
