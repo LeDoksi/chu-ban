@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Tab, Task } from './types';
 import { useSpheres } from './hooks/useSpheres';
 import { useEnsureDefaultSpheres } from './hooks/useEnsureDefaultSpheres';
@@ -10,6 +10,7 @@ import { TasksPage } from './pages/TasksPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { StatsPage } from './pages/StatsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { loadOneSignal, loginOneSignal, requestPushPermission } from './onesignal/init';
 
 type EditorState =
   | { mode: 'create'; parentEpicId: string | null }
@@ -22,6 +23,11 @@ export function Shell({ uid }: { uid: string }) {
   const { spheres, loaded } = useSpheres(uid);
   useEnsureDefaultSpheres(uid, spheres, loaded);
   const { tasks, setTaskStatus, closeEpic } = useTasks(uid);
+
+  useEffect(() => {
+    loadOneSignal();
+    loginOneSignal(uid);
+  }, [uid]);
 
   const openCreate = (parentEpicId: string | null = null) => setEditor({ mode: 'create', parentEpicId });
   const openEdit = (task: Task) => setEditor({ mode: 'edit', task });
@@ -42,7 +48,17 @@ export function Shell({ uid }: { uid: string }) {
         )}
         {tab === 'calendar' && <CalendarPage tasks={tasks} spheres={spheres} onOpenEdit={openEdit} />}
         {tab === 'stats' && <StatsPage tasks={tasks} spheres={spheres} />}
-        {tab === 'settings' && <SettingsPage uid={uid} spheres={spheres} />}
+        {tab === 'settings' && (
+          <div className="space-y-4">
+            <button
+              onClick={() => requestPushPermission()}
+              className="w-full rounded-2xl bg-dusty-blue/20 px-4 py-3 text-sm font-medium text-ink"
+            >
+              🔔 Включить уведомления
+            </button>
+            <SettingsPage uid={uid} spheres={spheres} />
+          </div>
+        )}
       </main>
       <BottomNav active={tab} onChange={setTab} />
       {editor && (
