@@ -43,10 +43,14 @@ async function run() {
     try {
       const taskSnap = await db.doc(`users/${reminder.uid}/tasks/${reminder.taskId}`).get();
       if (!taskSnap.exists) {
-        await reminderDoc.ref.update({ sent: true });
+        await reminderDoc.ref.delete();
         continue;
       }
       const task = taskSnap.data();
+      if (task.status === 'done') {
+        await reminderDoc.ref.delete();
+        continue;
+      }
       await sendPush(reminder.uid, `Напоминание: «${task.title}»`);
       await reminderDoc.ref.update({ sent: true });
       console.log(`Sent reminder ${reminderDoc.id} for task ${reminder.taskId}`);

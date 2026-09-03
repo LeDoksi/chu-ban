@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Trash2 } from 'lucide-react';
 import type { Sphere, Task, TaskType } from '../types';
 import { addTask, updateTask } from '../firebase/tasks';
 import { useReminders } from '../hooks/useReminders';
@@ -16,6 +17,7 @@ export function TaskForm({
   spheres,
   parentEpicId,
   onDone,
+  onDelete,
 }: {
   uid: string;
   mode: 'create' | 'edit';
@@ -23,6 +25,7 @@ export function TaskForm({
   spheres: Sphere[];
   parentEpicId: string | null;
   onDone: () => void;
+  onDelete?: () => Promise<void>;
 }) {
   const [type, setType] = useState<TaskType>(initialTask?.type ?? 'task');
   const [sphereId, setSphereId] = useState(initialTask?.sphereId ?? spheres[0]?.id ?? '');
@@ -40,6 +43,8 @@ export function TaskForm({
   const taskId = initialTask?.id ?? null;
   const { reminders, addReminder, deleteReminder } = useReminders(uid, taskId);
   const deadline = deadlineValue ? new Date(deadlineValue) : null;
+
+  const fieldClass = 'w-full rounded-xl border border-ink/20 px-3 py-2 text-base';
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -64,6 +69,23 @@ export function TaskForm({
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!onDelete) return;
+    const warning =
+      type === 'epic'
+        ? `Удалить эпик «${title}» вместе со всеми подзадачами? Это нельзя отменить.`
+        : `Удалить задачу «${title}»? Это нельзя отменить.`;
+    if (!confirm(warning)) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onDelete();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       setSaving(false);
     }
   }
@@ -93,11 +115,7 @@ export function TaskForm({
         </div>
       )}
 
-      <select
-        value={sphereId}
-        onChange={(e) => setSphereId(e.target.value)}
-        className="w-full rounded-xl border border-ink/20 px-3 py-2 text-sm"
-      >
+      <select value={sphereId} onChange={(e) => setSphereId(e.target.value)} className={fieldClass}>
         {spheres.map((sphere) => (
           <option key={sphere.id} value={sphere.id}>
             {sphere.name}
@@ -109,7 +127,7 @@ export function TaskForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Название"
-        className="w-full rounded-xl border border-ink/20 px-3 py-2 text-sm"
+        className={fieldClass}
         required
       />
 
@@ -117,19 +135,27 @@ export function TaskForm({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Описание (необязательно)"
-        className="w-full rounded-xl border border-ink/20 px-3 py-2 text-sm"
+        className={fieldClass}
         rows={3}
       />
 
-      <input
-        type="datetime-local"
-        value={deadlineValue}
-        onChange={(e) => setDeadlineValue(e.target.value)}
-        className="w-full rounded-xl border border-ink/20 px-3 py-2 text-sm"
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-ink/50">Срок (необязательно)</label>
+        <input
+          type="datetime-local"
+          value={deadlineValue}
+          onChange={(e) => setDeadlineValue(e.target.value)}
+          className={fieldClass}
+        />
+      </div>
 
       {mode === 'edit' && (
-        <ReminderPicker deadline={deadline} reminders={reminders} onAdd={addReminder} onRemove={deleteReminder} />
+        <div className="space-y-1.5 rounded-2xl bg-ink/[0.03] p-3">
+          <label className="text-xs font-medium text-ink/50">
+            Напоминания — пришлём push, чтобы не забыть
+          </label>
+          <ReminderPicker deadline={deadline} reminders={reminders} onAdd={addReminder} onRemove={deleteReminder} />
+        </div>
       )}
 
       {error && (
@@ -154,6 +180,18 @@ export function TaskForm({
           Сохранить
         </button>
       </div>
+
+      {onDelete && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={saving}
+          className="flex w-full items-center justify-center gap-1.5 py-1 text-sm font-medium text-terracotta disabled:opacity-50"
+        >
+          <Trash2 size={15} strokeWidth={1.75} />
+          {type === 'epic' ? 'Удалить эпик и подзадачи' : 'Удалить задачу'}
+        </button>
+      )}
     </form>
   );
 }

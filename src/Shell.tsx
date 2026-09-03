@@ -23,7 +23,7 @@ export function Shell({ uid }: { uid: string }) {
 
   const { spheres, loaded } = useSpheres(uid);
   useEnsureDefaultSpheres(uid, spheres, loaded);
-  const { tasks, setTaskStatus, closeEpic } = useTasks(uid);
+  const { tasks, setTaskStatus, closeEpic, deleteTask } = useTasks(uid);
 
   useEffect(() => {
     loadOneSignal();
@@ -78,6 +78,7 @@ export function Shell({ uid }: { uid: string }) {
             initialTask={editor.mode === 'edit' ? editor.task : undefined}
             parentEpicId={editor.mode === 'create' ? editor.parentEpicId : editor.task.parentEpicId}
             onDone={closeEditor}
+            onDelete={editor.mode === 'edit' ? () => deleteTask(editor.task.id).then(closeEditor) : undefined}
           />
         </Modal>
       )}

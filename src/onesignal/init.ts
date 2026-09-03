@@ -1,5 +1,9 @@
 export interface OneSignalSdk {
-  init(options: { appId: string; serviceWorkerPath?: string }): Promise<void>;
+  init(options: {
+    appId: string;
+    serviceWorkerPath?: string;
+    serviceWorkerParam?: { scope: string };
+  }): Promise<void>;
   login(externalId: string): Promise<void>;
   logout(): Promise<void>;
   Notifications: {
@@ -29,7 +33,11 @@ export function loadOneSignal(): void {
   pushDeferred(async (OneSignal) => {
     await OneSignal.init({
       appId: import.meta.env.VITE_ONESIGNAL_APP_ID,
-      serviceWorkerPath: 'sw.js',
+      // The app is served from /chu-ban/, not the origin root — both the
+      // worker path and its scope must reflect that or OneSignal looks for
+      // /sw.js and 404s.
+      serviceWorkerPath: 'chu-ban/sw.js',
+      serviceWorkerParam: { scope: '/chu-ban/' },
     });
   });
 }

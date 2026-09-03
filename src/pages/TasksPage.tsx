@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Sphere, Task, TaskStatus } from '../types';
 import { TaskCard } from '../components/TaskCard';
 
@@ -16,9 +17,11 @@ export function TasksPage({
   onToggleDone: (taskId: string, status: TaskStatus) => void;
   onCloseEpic: (epicId: string) => void;
 }) {
+  const [sphereFilter, setSphereFilter] = useState<string | null>(null);
   const sphereById = new Map(spheres.map((s) => [s.id, s]));
-  const topLevel = tasks.filter((t) => !t.parentEpicId && t.status === 'open');
-  const done = tasks.filter((t) => t.status === 'done');
+  const matchesFilter = (t: Task) => !sphereFilter || t.sphereId === sphereFilter;
+  const topLevel = tasks.filter((t) => !t.parentEpicId && t.status === 'open' && matchesFilter(t));
+  const done = tasks.filter((t) => t.status === 'done' && matchesFilter(t));
 
   function subtasksOf(epicId: string) {
     return tasks.filter((t) => t.parentEpicId === epicId);
@@ -33,9 +36,35 @@ export function TasksPage({
         + Новая задача
       </button>
 
+      {spheres.length > 0 && (
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          <button
+            onClick={() => setSphereFilter(null)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              sphereFilter === null ? 'bg-ink text-cream' : 'bg-ink/5 text-ink/60'
+            }`}
+          >
+            Все
+          </button>
+          {spheres.map((sphere) => (
+            <button
+              key={sphere.id}
+              onClick={() => setSphereFilter(sphere.id)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                sphereFilter === sphere.id ? 'text-white' : 'bg-ink/5 text-ink/60'
+              }`}
+              style={sphereFilter === sphere.id ? { backgroundColor: sphere.color } : undefined}
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: sphere.color }} />
+              {sphere.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {topLevel.length === 0 && done.length === 0 && (
         <p className="pt-6 text-center text-sm text-ink/50">
-          Пока пусто. Добавь первую задачу, когда будешь готова 🌱
+          {sphereFilter ? 'В этой сфере пока нет задач.' : 'Пока пусто. Добавь первую задачу, когда будешь готова 🌱'}
         </p>
       )}
 

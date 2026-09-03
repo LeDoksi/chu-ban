@@ -14,7 +14,7 @@ export function AccessDeniedPage() {
         </p>
       </div>
       <button
-        onClick={() => signOutUser()}
+        onClick={() => signOutUser().catch((err) => console.error('Не удалось выйти:', err))}
         className="rounded-full border border-ink/15 px-6 py-3 font-medium text-ink transition hover:bg-ink/5 active:scale-[0.98]"
       >
         Выйти

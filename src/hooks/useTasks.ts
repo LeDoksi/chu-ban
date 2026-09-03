@@ -21,7 +21,7 @@ export function useTasks(uid: string) {
     tasks,
     addTask: (input: NewTaskInput) => addTaskFn(uid, input),
     updateTask: (taskId: string, changes: Partial<NewTaskInput>) => updateTaskFn(uid, taskId, changes),
-    deleteTask: (taskId: string) => deleteTaskFn(uid, taskId),
+    deleteTask: (taskId: string) => deleteTaskFn(uid, taskId, tasks),
     setTaskStatus: (taskId: string, status: TaskStatus) => setTaskStatusFn(uid, taskId, status),
     closeEpic: (epicId: string) => closeEpicWithSubtasks(uid, epicId, tasks),
   };

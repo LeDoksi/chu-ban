@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './config';
 import type { Task, TaskStatus, TaskType } from '../types';
-import { subtaskIdsToClose } from '../lib/epicCascade';
+import { subtaskIdsToClose, subtaskIdsOf } from '../lib/epicCascade';
 
 export interface NewTaskInput {
   type: TaskType;
@@ -72,8 +72,18 @@ export async function updateTask(uid: string, taskId: string, changes: Partial<N
   await updateDoc(doc(db, 'users', uid, 'tasks', taskId), data);
 }
 
-export async function deleteTask(uid: string, taskId: string): Promise<void> {
-  await deleteDoc(doc(db, 'users', uid, 'tasks', taskId));
+export async function deleteTask(uid: string, taskId: string, allTasks: Task[]): Promise<void> {
+  const subtaskIds = subtaskIdsOf(allTasks, taskId);
+  if (subtaskIds.length === 0) {
+    await deleteDoc(doc(db, 'users', uid, 'tasks', taskId));
+    return;
+  }
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'users', uid, 'tasks', taskId));
+  for (const subtaskId of subtaskIds) {
+    batch.delete(doc(db, 'users', uid, 'tasks', subtaskId));
+  }
+  await batch.commit();
 }
 
 export async function setTaskStatus(uid: string, taskId: string, status: TaskStatus): Promise<void> {

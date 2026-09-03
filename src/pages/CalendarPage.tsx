@@ -44,7 +44,7 @@ export function CalendarPage({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
+      <div className="rounded-2xl bg-surface p-4 shadow-sm">
         <div className="flex items-center justify-between pb-3">
           <button
             onClick={() => {
@@ -110,6 +110,12 @@ export function CalendarPage({
         </div>
       </div>
 
+      {tasksWithDeadline.length === 0 && (
+        <p className="pt-4 text-center text-sm text-ink/40">
+          Дедлайнов пока нет — самое спокойное состояние календаря 🌤️
+        </p>
+      )}
+
       {selectedDay && (
         <div className="space-y-2 pt-2">
           <p className="text-sm font-medium text-ink/70">
@@ -122,7 +128,7 @@ export function CalendarPage({
             <button
               key={task.id}
               onClick={() => onOpenEdit(task)}
-              className="flex w-full items-center gap-2 rounded-xl bg-white p-3 text-left text-sm shadow-sm"
+              className="flex w-full items-center gap-2 rounded-xl bg-surface p-3 text-left text-sm shadow-sm"
             >
               <span
                 className="h-2 w-2 rounded-full"

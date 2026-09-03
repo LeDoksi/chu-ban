@@ -2,6 +2,7 @@
 
 @theme {
   --color-cream: #faf6f0;
+  --color-surface: #fffdfa;
   --color-ink: #2e2a26;
   --color-sage: #7c9885;
   --color-terracotta: #e8927c;
@@ -14,4 +15,12 @@
 
 body {
   font-family: var(--font-sans);
+}
+
+/* iOS Safari auto-zooms on focus into any text field under 16px.
+   !important guarantees this wins over any text-sm/text-xs utility class. */
+input,
+textarea,
+select {
+  font-size: 16px !important;
 }
