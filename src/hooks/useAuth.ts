@@ -1,30 +1,25 @@
 import { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { subscribeToAuth, consumeRedirectResult, isEmailAllowed } from '../firebase/auth';
+import { subscribeToAuth, isEmailAllowed } from '../firebase/auth';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'denied' | 'signedIn';
 
 export interface AuthState {
   status: AuthStatus;
   user: User | null;
-  error: string | null;
 }
 
 export function useAuth(): AuthState {
-  const [state, setState] = useState<AuthState>({ status: 'loading', user: null, error: null });
+  const [state, setState] = useState<AuthState>({ status: 'loading', user: null });
 
   useEffect(() => {
-    consumeRedirectResult().catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : String(err);
-      setState((prev) => ({ ...prev, error: message }));
-    });
     const unsubscribe = subscribeToAuth((user) => {
       if (!user) {
-        setState((prev) => ({ status: 'signedOut', user: null, error: prev.error }));
+        setState({ status: 'signedOut', user: null });
       } else if (!isEmailAllowed(user.email)) {
-        setState({ status: 'denied', user, error: null });
+        setState({ status: 'denied', user });
       } else {
-        setState({ status: 'signedIn', user, error: null });
+        setState({ status: 'signedIn', user });
       }
     });
     return unsubscribe;

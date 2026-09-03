@@ -4,7 +4,7 @@ import { AccessDeniedPage } from './pages/AccessDeniedPage';
 import { Shell } from './Shell';
 
 export default function App() {
-  const { status, user, error } = useAuth();
+  const { status, user } = useAuth();
 
   if (status === 'loading') {
     return (
@@ -14,7 +14,7 @@ export default function App() {
     );
   }
   if (status === 'signedOut') {
-    return <LoginPage error={error} />;
+    return <LoginPage />;
   }
   if (status === 'denied') {
     return <AccessDeniedPage />;

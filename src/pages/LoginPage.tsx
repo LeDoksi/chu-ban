@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Sprout } from 'lucide-react';
 import { signIn } from '../firebase/auth';
 
@@ -21,7 +22,25 @@ function GoogleGlyph() {
   );
 }
 
-export function LoginPage({ error }: { error?: string | null }) {
+export function LoginPage() {
+  const [error, setError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
+
+  async function handleSignIn() {
+    setSigningIn(true);
+    setError(null);
+    try {
+      await signIn();
+    } catch (err) {
+      const code = err && typeof err === 'object' && 'code' in err ? String(err.code) : '';
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      setSigningIn(false);
+    }
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-cream px-6 text-center">
       <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-sage/15 blur-3xl" />
@@ -40,11 +59,12 @@ export function LoginPage({ error }: { error?: string | null }) {
         </div>
 
         <button
-          onClick={() => signIn()}
-          className="flex items-center gap-2.5 rounded-full bg-white px-6 py-3 font-medium text-ink shadow-[0_1px_2px_rgba(46,42,38,0.06),0_8px_20px_rgba(46,42,38,0.08)] transition hover:shadow-[0_1px_2px_rgba(46,42,38,0.08),0_10px_24px_rgba(46,42,38,0.12)] active:scale-[0.98]"
+          onClick={handleSignIn}
+          disabled={signingIn}
+          className="flex items-center gap-2.5 rounded-full bg-white px-6 py-3 font-medium text-ink shadow-[0_1px_2px_rgba(46,42,38,0.06),0_8px_20px_rgba(46,42,38,0.08)] transition hover:shadow-[0_1px_2px_rgba(46,42,38,0.08),0_10px_24px_rgba(46,42,38,0.12)] active:scale-[0.98] disabled:opacity-60"
         >
           <GoogleGlyph />
-          Войти через Google
+          {signingIn ? 'Входим…' : 'Войти через Google'}
         </button>
 
         {error && (
