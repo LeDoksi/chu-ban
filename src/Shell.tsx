@@ -7,6 +7,7 @@ import { BottomNav } from './components/BottomNav';
 import { Modal } from './components/Modal';
 import { TaskForm } from './components/TaskForm';
 import { TasksPage } from './pages/TasksPage';
+import { CalendarPage } from './pages/CalendarPage';
 
 type EditorState =
   | { mode: 'create'; parentEpicId: string | null }
@@ -37,7 +38,7 @@ export function Shell({ uid }: { uid: string }) {
             onCloseEpic={closeEpic}
           />
         )}
-        {tab === 'calendar' && <p className="text-ink">Календарь скоро здесь появится.</p>}
+        {tab === 'calendar' && <CalendarPage tasks={tasks} spheres={spheres} onOpenEdit={openEdit} />}
         {tab === 'stats' && <p className="text-ink">Статистика скоро здесь появится.</p>}
         {tab === 'settings' && <p className="text-ink">Настройки скоро здесь появятся.</p>}
       </main>
