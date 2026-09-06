@@ -48,7 +48,7 @@ export function loginOneSignal(uid: string): void {
   });
 }
 
-export type PushPermissionResult = 'granted' | 'denied' | 'unsupported';
+export type PushPermissionResult = 'granted' | 'denied' | 'unsupported' | 'timeout';
 
 // iOS Safari only exposes the Notification/Push APIs when the site has been
 // added to the home screen and opened from there — in a regular tab the
@@ -66,9 +66,33 @@ export function getPushPermission(): PushPermissionResult | 'default' {
 export function requestPushPermission(): Promise<PushPermissionResult> {
   if (!isPushSupported()) return Promise.resolve('unsupported');
   return new Promise((resolve) => {
+    // The OneSignal script can fail to load entirely — blocked by an ad
+    // blocker or VPN, a flaky connection — in which case OneSignalDeferred
+    // never drains and the callback below never runs. Without a timeout the
+    // button is stuck on "requesting" forever with no way out.
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve('timeout');
+      }
+    }, 8000);
     pushDeferred(async (OneSignal) => {
-      await OneSignal.Notifications.requestPermission();
-      resolve(Notification.permission === 'granted' ? 'granted' : 'denied');
+      if (settled) return;
+      try {
+        await OneSignal.Notifications.requestPermission();
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(Notification.permission === 'granted' ? 'granted' : 'denied');
+        }
+      } catch {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve('timeout');
+        }
+      }
     });
   });
 }

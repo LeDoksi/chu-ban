@@ -1,60 +1,41 @@
 import { useState, type FormEvent } from 'react';
-import { Trash2 } from 'lucide-react';
-import type { Sphere, Task, TaskType } from '../types';
-import { addTask, updateTask } from '../firebase/tasks';
+import type { Sphere, TaskType } from '../types';
+import { addTask } from '../firebase/tasks';
 import { addReminder as addReminderFn } from '../firebase/reminders';
-import { useReminders } from '../hooks/useReminders';
 import { ReminderPicker, type ReminderLike } from './ReminderPicker';
 import { DateTimePicker } from './DateTimePicker';
 
 export function TaskForm({
   uid,
-  mode,
-  initialTask,
   spheres,
   parentEpicId,
   defaultDeadline = null,
   onDone,
-  onDelete,
 }: {
   uid: string;
-  mode: 'create' | 'edit';
-  initialTask?: Task;
   spheres: Sphere[];
   parentEpicId: string | null;
   defaultDeadline?: Date | null;
   onDone: () => void;
-  onDelete?: () => Promise<void>;
 }) {
-  const [type, setType] = useState<TaskType>(initialTask?.type ?? 'task');
-  const [sphereId, setSphereId] = useState(initialTask?.sphereId ?? spheres[0]?.id ?? '');
-  const [title, setTitle] = useState(initialTask?.title ?? '');
-  const [description, setDescription] = useState(initialTask?.description ?? '');
-  const [deadline, setDeadline] = useState<Date | null>(initialTask?.deadline ?? defaultDeadline);
+  const [type, setType] = useState<TaskType>('task');
+  const [sphereId, setSphereId] = useState(spheres[0]?.id ?? '');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [deadline, setDeadline] = useState<Date | null>(defaultDeadline);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const taskId = initialTask?.id ?? null;
-  const savedReminders = useReminders(uid, taskId);
-  // Before the task exists (create mode) reminders live only in local state,
-  // then get written to Firestore right after the task itself is created.
+  // Reminders need a task id, which doesn't exist yet — held locally and
+  // written to Firestore right after the task itself is created.
   const [pendingReminders, setPendingReminders] = useState<ReminderLike[]>([]);
-  const reminders: ReminderLike[] = taskId ? savedReminders.reminders : pendingReminders;
 
   function addReminder(fireAt: Date) {
-    if (taskId) {
-      savedReminders.addReminder(fireAt);
-    } else {
-      setPendingReminders((prev) => [...prev, { id: crypto.randomUUID(), fireAt }]);
-    }
+    setPendingReminders((prev) => [...prev, { id: crypto.randomUUID(), fireAt }]);
   }
 
   function removeReminder(id: string) {
-    if (taskId) {
-      savedReminders.deleteReminder(id);
-    } else {
-      setPendingReminders((prev) => prev.filter((r) => r.id !== id));
-    }
+    setPendingReminders((prev) => prev.filter((r) => r.id !== id));
   }
 
   const fieldClass = 'w-full rounded-xl border border-ink/20 px-3 py-2 text-base';
@@ -64,22 +45,17 @@ export function TaskForm({
     if (!title.trim() || !sphereId) return;
     setSaving(true);
     setError(null);
-    const input = {
-      type,
-      sphereId,
-      title: title.trim(),
-      description: description.trim() || null,
-      deadline,
-      parentEpicId: initialTask ? initialTask.parentEpicId : parentEpicId,
-    };
     try {
-      if (mode === 'create') {
-        const newId = await addTask(uid, input);
-        for (const reminder of pendingReminders) {
-          await addReminderFn(uid, { taskId: newId, fireAt: reminder.fireAt });
-        }
-      } else if (initialTask) {
-        await updateTask(uid, initialTask.id, input);
+      const newId = await addTask(uid, {
+        type,
+        sphereId,
+        title: title.trim(),
+        description: description.trim() || null,
+        deadline,
+        parentEpicId,
+      });
+      for (const reminder of pendingReminders) {
+        await addReminderFn(uid, { taskId: newId, fireAt: reminder.fireAt });
       }
       onDone();
     } catch (err) {
@@ -89,28 +65,9 @@ export function TaskForm({
     }
   }
 
-  async function handleDelete() {
-    if (!onDelete) return;
-    const warning =
-      type === 'epic'
-        ? `Удалить эпик «${title}» вместе со всеми подзадачами? Это нельзя отменить.`
-        : `Удалить задачу «${title}»? Это нельзя отменить.`;
-    if (!confirm(warning)) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await onDelete();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setSaving(false);
-    }
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-lg font-semibold text-ink">
-        {mode === 'create' ? 'Новая задача' : 'Редактировать задачу'}
-      </h2>
+      <h2 className="text-lg font-semibold text-ink">Новая задача</h2>
 
       {!parentEpicId && (
         <div className="flex gap-2">
@@ -161,7 +118,7 @@ export function TaskForm({
         <label className="text-xs font-medium text-ink/50">
           Напоминания — пришлём push, чтобы не забыть
         </label>
-        <ReminderPicker deadline={deadline} reminders={reminders} onAdd={addReminder} onRemove={removeReminder} />
+        <ReminderPicker deadline={deadline} reminders={pendingReminders} onAdd={addReminder} onRemove={removeReminder} />
       </div>
 
       {error && (
@@ -186,18 +143,6 @@ export function TaskForm({
           Сохранить
         </button>
       </div>
-
-      {onDelete && (
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={saving}
-          className="flex w-full items-center justify-center gap-1.5 py-1 text-sm font-medium text-terracotta disabled:opacity-50"
-        >
-          <Trash2 size={15} strokeWidth={1.75} />
-          {type === 'epic' ? 'Удалить эпик и подзадачи' : 'Удалить задачу'}
-        </button>
-      )}
     </form>
   );
 }

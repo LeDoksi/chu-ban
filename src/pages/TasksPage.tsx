@@ -51,7 +51,7 @@ export function TasksPage({
           isExpanded={isExpanded}
           onToggleExpand={() => toggleExpanded(task.id)}
           onToggleDone={() => (task.status === 'open' ? onCloseEpic(task.id) : onToggleDone(task.id, 'open'))}
-          onEdit={() => onOpenEdit(task)}
+          onOpen={() => onOpenEdit(task)}
         />
         {isExpanded && (
           <div className="ml-6 mt-2 space-y-2">
@@ -61,7 +61,7 @@ export function TasksPage({
                 task={subtask}
                 sphere={sphereById.get(subtask.sphereId)}
                 onToggleDone={() => onToggleSubtask(subtask.id, subtask.status === 'done' ? 'open' : 'done')}
-                onEdit={() => onOpenEdit(subtask)}
+                onOpen={() => onOpenEdit(subtask)}
               />
             ))}
             <button onClick={() => onOpenCreate(task.id)} className="text-xs font-medium text-sage">
@@ -124,7 +124,7 @@ export function TasksPage({
               task={task}
               sphere={sphereById.get(task.sphereId)}
               onToggleDone={() => onToggleDone(task.id, 'done')}
-              onEdit={() => onOpenEdit(task)}
+              onOpen={() => onOpenEdit(task)}
             />
           )
         )}
@@ -140,7 +140,7 @@ export function TasksPage({
                 task={task}
                 sphere={sphereById.get(task.sphereId)}
                 onToggleDone={() => onToggleDone(task.id, 'open')}
-                onEdit={() => onOpenEdit(task)}
+                onOpen={() => onOpenEdit(task)}
               />
             )))}
           </div>

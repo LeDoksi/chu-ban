@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Check, Pencil, ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Layers } from 'lucide-react';
 import type { Sphere, Task } from '../types';
 import { SphereBadge } from './SphereBadge';
 import { OverdueBanner } from './OverdueBanner';
@@ -23,7 +22,7 @@ export function TaskCard({
   isExpanded,
   onToggleExpand,
   onToggleDone,
-  onEdit,
+  onOpen,
 }: {
   task: Task;
   sphere: Sphere | undefined;
@@ -31,30 +30,27 @@ export function TaskCard({
   isExpanded?: boolean;
   onToggleExpand?: () => void;
   onToggleDone: () => void;
-  onEdit: () => void;
+  onOpen: () => void;
 }) {
-  const [showDescription, setShowDescription] = useState(false);
+  const isEpic = task.type === 'epic';
   const isOverdue = !!task.deadline && task.deadline.getTime() < Date.now() && task.status === 'open';
   const tint = sphere ? hexToRgba(sphere.color, 0.08) : undefined;
   const progressPct = subtaskProgress && subtaskProgress.total > 0 ? (subtaskProgress.done / subtaskProgress.total) * 100 : 0;
 
   return (
-    <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: tint ?? 'var(--color-surface)' }}>
+    <div
+      onClick={onOpen}
+      className={`cursor-pointer rounded-2xl p-4 shadow-sm ${isEpic ? 'border-l-[3px] border-sage/60' : ''}`}
+      style={{ backgroundColor: tint ?? 'var(--color-surface)' }}
+    >
       <div className="flex items-start gap-3">
-        <button
-          onClick={onToggleDone}
-          aria-label={task.status === 'done' ? 'Снять отметку выполнено' : 'Отметить выполненным'}
-          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition active:scale-90 ${
-            task.status === 'done' ? 'border-sage bg-sage text-white' : 'border-ink/25 bg-white/40 hover:border-sage hover:bg-sage/10'
-          }`}
-        >
-          {task.status === 'done' && <Check size={15} strokeWidth={3} />}
-        </button>
-
-        <div
-          className="min-w-0 flex-1 cursor-pointer"
-          onClick={() => task.description && setShowDescription((v) => !v)}
-        >
+        <div className="min-w-0 flex-1">
+          {isEpic && (
+            <div className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-sage">
+              <Layers size={11} strokeWidth={2.5} />
+              Эпик
+            </div>
+          )}
           <p className={`font-medium text-ink ${task.status === 'done' ? 'line-through opacity-50' : ''}`}>
             {task.title}
           </p>
@@ -77,31 +73,42 @@ export function TaskCard({
               />
             </div>
           )}
-          {showDescription && task.description && (
-            <p className="mt-2 whitespace-pre-wrap text-sm text-ink/60">{task.description}</p>
-          )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-2">
           {onToggleExpand && (
             <button
-              onClick={onToggleExpand}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleExpand();
+              }}
               aria-label={isExpanded ? 'Свернуть подзадачи' : 'Показать подзадачи'}
-              className="rounded-full p-1.5 text-ink/40 transition hover:bg-ink/5 hover:text-ink"
+              className="rounded-full p-1 text-ink/40 transition hover:bg-ink/5 hover:text-ink"
             >
               {isExpanded ? <ChevronDown size={16} strokeWidth={2} /> : <ChevronRight size={16} strokeWidth={2} />}
             </button>
           )}
           <button
-            onClick={onEdit}
-            aria-label="Редактировать"
-            className="rounded-full p-1.5 text-ink/40 transition hover:bg-ink/5 hover:text-ink"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleDone();
+            }}
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition active:scale-95 ${
+              task.status === 'done'
+                ? 'bg-sage text-white'
+                : 'border border-ink/25 text-ink/60 hover:border-sage hover:text-sage'
+            }`}
           >
-            <Pencil size={15} strokeWidth={1.75} />
+            {task.status === 'done' && <Check size={13} strokeWidth={3} />}
+            Выполнено
           </button>
         </div>
       </div>
-      {isOverdue && <OverdueBanner onComplete={onToggleDone} onReschedule={onEdit} />}
+      {isOverdue && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <OverdueBanner onComplete={onToggleDone} onReschedule={onOpen} />
+        </div>
+      )}
     </div>
   );
 }

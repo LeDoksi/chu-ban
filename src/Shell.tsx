@@ -7,6 +7,7 @@ import { useTasks } from './hooks/useTasks';
 import { BottomNav } from './components/BottomNav';
 import { Modal } from './components/Modal';
 import { TaskForm } from './components/TaskForm';
+import { TaskDetailView } from './components/TaskDetailView';
 import { TasksPage } from './pages/TasksPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { StatsPage } from './pages/StatsPage';
@@ -21,7 +22,7 @@ import {
 
 type EditorState =
   | { mode: 'create'; parentEpicId: string | null; defaultDeadline: Date | null }
-  | { mode: 'edit'; task: Task };
+  | { mode: 'edit'; taskId: string };
 
 export function Shell({ uid }: { uid: string }) {
   const [tab, setTab] = useState<Tab>('tasks');
@@ -52,8 +53,12 @@ export function Shell({ uid }: { uid: string }) {
     const defaultDeadline = parentEpicId ? tasks.find((t) => t.id === parentEpicId)?.deadline ?? null : null;
     setEditor({ mode: 'create', parentEpicId, defaultDeadline });
   };
-  const openEdit = (task: Task) => setEditor({ mode: 'edit', task });
+  const openEdit = (task: Task) => setEditor({ mode: 'edit', taskId: task.id });
   const closeEditor = () => setEditor(null);
+  // Always look the task up fresh from `tasks` rather than keeping the
+  // snapshot from when the detail view was opened, so inline field edits
+  // (which write straight to Firestore) show up immediately.
+  const editingTask = editor?.mode === 'edit' ? tasks.find((t) => t.id === editor.taskId) : undefined;
 
   return (
     <div className="flex min-h-screen flex-col bg-cream pb-24">
@@ -105,22 +110,36 @@ export function Shell({ uid }: { uid: string }) {
                 Доступ к уведомлениям запрещён. Разреши их для сайта в настройках браузера, чтобы включить.
               </p>
             )}
+            {pushState === 'timeout' && (
+              <p className="text-xs text-ink/50">
+                Не получилось связаться со службой уведомлений. Проверь интернет, отключи блокировщик рекламы
+                или VPN для этого сайта и попробуй ещё раз.
+              </p>
+            )}
             <SettingsPage uid={uid} spheres={spheres} />
           </div>
         )}
       </main>
       <BottomNav active={tab} onChange={setTab} />
-      {editor && (
+      {editor?.mode === 'create' && (
         <Modal onClose={closeEditor}>
           <TaskForm
             uid={uid}
             spheres={spheres}
-            mode={editor.mode}
-            initialTask={editor.mode === 'edit' ? editor.task : undefined}
-            parentEpicId={editor.mode === 'create' ? editor.parentEpicId : editor.task.parentEpicId}
-            defaultDeadline={editor.mode === 'create' ? editor.defaultDeadline : null}
+            parentEpicId={editor.parentEpicId}
+            defaultDeadline={editor.defaultDeadline}
             onDone={closeEditor}
-            onDelete={editor.mode === 'edit' ? () => deleteTask(editor.task.id).then(closeEditor) : undefined}
+          />
+        </Modal>
+      )}
+      {editor?.mode === 'edit' && editingTask && (
+        <Modal onClose={closeEditor}>
+          <TaskDetailView
+            uid={uid}
+            task={editingTask}
+            spheres={spheres}
+            onClose={closeEditor}
+            onDelete={() => deleteTask(editingTask.id).then(closeEditor)}
           />
         </Modal>
       )}
