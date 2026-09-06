@@ -48,8 +48,27 @@ export function loginOneSignal(uid: string): void {
   });
 }
 
-export function requestPushPermission(): void {
-  pushDeferred(async (OneSignal) => {
-    await OneSignal.Notifications.requestPermission();
+export type PushPermissionResult = 'granted' | 'denied' | 'unsupported';
+
+// iOS Safari only exposes the Notification/Push APIs when the site has been
+// added to the home screen and opened from there — in a regular tab the
+// button's click handler runs fine but silently does nothing, which reads to
+// her as "the button isn't clickable". Feature-detect it so we can tell her why.
+export function isPushSupported(): boolean {
+  return typeof Notification !== 'undefined' && 'serviceWorker' in navigator;
+}
+
+export function getPushPermission(): PushPermissionResult | 'default' {
+  if (!isPushSupported()) return 'unsupported';
+  return Notification.permission;
+}
+
+export function requestPushPermission(): Promise<PushPermissionResult> {
+  if (!isPushSupported()) return Promise.resolve('unsupported');
+  return new Promise((resolve) => {
+    pushDeferred(async (OneSignal) => {
+      await OneSignal.Notifications.requestPermission();
+      resolve(Notification.permission === 'granted' ? 'granted' : 'denied');
+    });
   });
 }

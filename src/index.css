@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #faf6f0;
-  --color-surface: #fffdfa;
-  --color-ink: #2e2a26;
+  --color-cream: #fbe9de;
+  --color-surface: #fff4ec;
+  --color-ink: #362e2a;
   --color-sage: #7c9885;
   --color-terracotta: #e8927c;
   --color-gold: #d4a373;
+  --color-blush: #f0a8bb;
   --color-dusty-blue: #6c9bcf;
   --color-pale-teal: #a8dadc;
   --color-lavender: #c8a2c8;
@@ -15,6 +16,7 @@
 
 body {
   font-family: var(--font-sans);
+  background: var(--color-cream);
 }
 
 /* iOS Safari auto-zooms on focus into any text field under 16px.

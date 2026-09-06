@@ -93,6 +93,31 @@ export async function setTaskStatus(uid: string, taskId: string, status: TaskSta
   });
 }
 
+export async function setSubtaskStatus(
+  uid: string,
+  allTasks: Task[],
+  subtaskId: string,
+  status: TaskStatus
+): Promise<void> {
+  const subtask = allTasks.find((t) => t.id === subtaskId);
+  const batch = writeBatch(db);
+  const now = Timestamp.now();
+  batch.update(doc(db, 'users', uid, 'tasks', subtaskId), {
+    status,
+    completedAt: status === 'done' ? now : null,
+  });
+  // Reopening a subtask whose epic was already closed must bring the epic
+  // back to active — otherwise the subtask has nowhere to render (its epic
+  // is filtered out of the open list) and appears to just vanish.
+  if (status === 'open' && subtask?.parentEpicId) {
+    const epic = allTasks.find((t) => t.id === subtask.parentEpicId);
+    if (epic?.status === 'done') {
+      batch.update(doc(db, 'users', uid, 'tasks', epic.id), { status: 'open', completedAt: null });
+    }
+  }
+  await batch.commit();
+}
+
 export async function closeEpicWithSubtasks(uid: string, epicId: string, allTasks: Task[]): Promise<void> {
   const batch = writeBatch(db);
   const now = Timestamp.now();

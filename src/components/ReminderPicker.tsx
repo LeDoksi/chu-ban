@@ -1,7 +1,14 @@
 import { useState } from 'react';
-import type { Reminder, ReminderPreset } from '../types';
+import type { ReminderPreset } from '../types';
 import { REMINDER_PRESET_LABELS } from '../types';
 import { presetToFireAt, isFireAtInFuture } from '../lib/reminderTime';
+
+// Loose enough to accept both real Firestore reminders (edit mode) and
+// not-yet-saved local ones held in memory until the new task gets an id.
+export interface ReminderLike {
+  id: string;
+  fireAt: Date;
+}
 
 const PRESETS: ReminderPreset[] = ['weekBefore', 'dayBefore', 'hourBefore', 'onDeadline'];
 
@@ -17,7 +24,7 @@ export function ReminderPicker({
   onRemove,
 }: {
   deadline: Date | null;
-  reminders: Reminder[];
+  reminders: ReminderLike[];
   onAdd: (fireAt: Date) => void;
   onRemove: (id: string) => void;
 }) {

@@ -8,6 +8,7 @@ export function TasksPage({
   onOpenCreate,
   onOpenEdit,
   onToggleDone,
+  onToggleSubtask,
   onCloseEpic,
 }: {
   tasks: Task[];
@@ -15,16 +16,61 @@ export function TasksPage({
   onOpenCreate: (parentEpicId: string | null) => void;
   onOpenEdit: (task: Task) => void;
   onToggleDone: (taskId: string, status: TaskStatus) => void;
+  onToggleSubtask: (subtaskId: string, status: TaskStatus) => void;
   onCloseEpic: (epicId: string) => void;
 }) {
   const [sphereFilter, setSphereFilter] = useState<string | null>(null);
+  const [expandedEpics, setExpandedEpics] = useState<Record<string, boolean>>({});
   const sphereById = new Map(spheres.map((s) => [s.id, s]));
   const matchesFilter = (t: Task) => !sphereFilter || t.sphereId === sphereFilter;
+  // Top-level = has no parent epic. Subtasks always render nested under their
+  // epic instead, whether the epic is open or done — never as their own row,
+  // which is what caused a completed subtask to show up twice.
   const topLevel = tasks.filter((t) => !t.parentEpicId && t.status === 'open' && matchesFilter(t));
-  const done = tasks.filter((t) => t.status === 'done' && matchesFilter(t));
+  const done = tasks.filter((t) => t.status === 'done' && !t.parentEpicId && matchesFilter(t));
 
   function subtasksOf(epicId: string) {
-    return tasks.filter((t) => t.parentEpicId === epicId);
+    return tasks
+      .filter((t) => t.parentEpicId === epicId)
+      .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done'));
+  }
+
+  function toggleExpanded(epicId: string) {
+    setExpandedEpics((prev) => ({ ...prev, [epicId]: !prev[epicId] }));
+  }
+
+  function renderEpicRow(task: Task) {
+    const subtasks = subtasksOf(task.id);
+    const isExpanded = !!expandedEpics[task.id];
+    return (
+      <div key={task.id}>
+        <TaskCard
+          task={task}
+          sphere={sphereById.get(task.sphereId)}
+          subtaskProgress={{ done: subtasks.filter((s) => s.status === 'done').length, total: subtasks.length }}
+          isExpanded={isExpanded}
+          onToggleExpand={() => toggleExpanded(task.id)}
+          onToggleDone={() => (task.status === 'open' ? onCloseEpic(task.id) : onToggleDone(task.id, 'open'))}
+          onEdit={() => onOpenEdit(task)}
+        />
+        {isExpanded && (
+          <div className="ml-6 mt-2 space-y-2">
+            {subtasks.map((subtask) => (
+              <TaskCard
+                key={subtask.id}
+                task={subtask}
+                sphere={sphereById.get(subtask.sphereId)}
+                onToggleDone={() => onToggleSubtask(subtask.id, subtask.status === 'done' ? 'open' : 'done')}
+                onEdit={() => onOpenEdit(subtask)}
+              />
+            ))}
+            <button onClick={() => onOpenCreate(task.id)} className="text-xs font-medium text-sage">
+              + Подзадача
+            </button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -69,57 +115,34 @@ export function TasksPage({
       )}
 
       <div className="space-y-3">
-        {topLevel.map((task) => {
-          const subtasks = task.type === 'epic' ? subtasksOf(task.id) : [];
-          return (
-            <div key={task.id}>
-              <TaskCard
-                task={task}
-                sphere={sphereById.get(task.sphereId)}
-                subtaskProgress={
-                  task.type === 'epic'
-                    ? { done: subtasks.filter((s) => s.status === 'done').length, total: subtasks.length }
-                    : undefined
-                }
-                onToggleDone={() =>
-                  task.type === 'epic' ? onCloseEpic(task.id) : onToggleDone(task.id, 'done')
-                }
-                onOpen={() => onOpenEdit(task)}
-              />
-              {task.type === 'epic' && (
-                <div className="ml-6 mt-2 space-y-2">
-                  {subtasks.map((subtask) => (
-                    <TaskCard
-                      key={subtask.id}
-                      task={subtask}
-                      sphere={sphereById.get(subtask.sphereId)}
-                      onToggleDone={() => onToggleDone(subtask.id, subtask.status === 'done' ? 'open' : 'done')}
-                      onOpen={() => onOpenEdit(subtask)}
-                    />
-                  ))}
-                  <button onClick={() => onOpenCreate(task.id)} className="text-xs font-medium text-sage">
-                    + Подзадача
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {topLevel.map((task) =>
+          task.type === 'epic' ? (
+            renderEpicRow(task)
+          ) : (
+            <TaskCard
+              key={task.id}
+              task={task}
+              sphere={sphereById.get(task.sphereId)}
+              onToggleDone={() => onToggleDone(task.id, 'done')}
+              onEdit={() => onOpenEdit(task)}
+            />
+          )
+        )}
       </div>
 
       {done.length > 0 && (
         <details className="pt-2">
           <summary className="cursor-pointer text-sm text-ink/50">Выполнено ({done.length})</summary>
-          <div className="mt-2 space-y-2">
-            {done.map((task) => (
+          <div className="mt-2 space-y-3">
+            {done.map((task) => (task.type === 'epic' ? renderEpicRow(task) : (
               <TaskCard
                 key={task.id}
                 task={task}
                 sphere={sphereById.get(task.sphereId)}
                 onToggleDone={() => onToggleDone(task.id, 'open')}
-                onOpen={() => onOpenEdit(task)}
+                onEdit={() => onOpenEdit(task)}
               />
-            ))}
+            )))}
           </div>
         </details>
       )}

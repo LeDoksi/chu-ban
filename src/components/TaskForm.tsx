@@ -2,13 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { Sphere, Task, TaskType } from '../types';
 import { addTask, updateTask } from '../firebase/tasks';
+import { addReminder as addReminderFn } from '../firebase/reminders';
 import { useReminders } from '../hooks/useReminders';
-import { ReminderPicker } from './ReminderPicker';
-
-function toDatetimeLocalValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+import { ReminderPicker, type ReminderLike } from './ReminderPicker';
+import { DateTimePicker } from './DateTimePicker';
 
 export function TaskForm({
   uid,
@@ -16,6 +13,7 @@ export function TaskForm({
   initialTask,
   spheres,
   parentEpicId,
+  defaultDeadline = null,
   onDone,
   onDelete,
 }: {
@@ -24,6 +22,7 @@ export function TaskForm({
   initialTask?: Task;
   spheres: Sphere[];
   parentEpicId: string | null;
+  defaultDeadline?: Date | null;
   onDone: () => void;
   onDelete?: () => Promise<void>;
 }) {
@@ -31,18 +30,32 @@ export function TaskForm({
   const [sphereId, setSphereId] = useState(initialTask?.sphereId ?? spheres[0]?.id ?? '');
   const [title, setTitle] = useState(initialTask?.title ?? '');
   const [description, setDescription] = useState(initialTask?.description ?? '');
-  const [deadlineValue, setDeadlineValue] = useState(
-    initialTask?.deadline ? toDatetimeLocalValue(initialTask.deadline) : ''
-  );
+  const [deadline, setDeadline] = useState<Date | null>(initialTask?.deadline ?? defaultDeadline);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ponytail: reminders need a task id, so on create the picker only appears
-  // after reopening the saved task in edit mode. Add an inline "save then keep
-  // editing" flow if that extra tap turns out to bother her.
   const taskId = initialTask?.id ?? null;
-  const { reminders, addReminder, deleteReminder } = useReminders(uid, taskId);
-  const deadline = deadlineValue ? new Date(deadlineValue) : null;
+  const savedReminders = useReminders(uid, taskId);
+  // Before the task exists (create mode) reminders live only in local state,
+  // then get written to Firestore right after the task itself is created.
+  const [pendingReminders, setPendingReminders] = useState<ReminderLike[]>([]);
+  const reminders: ReminderLike[] = taskId ? savedReminders.reminders : pendingReminders;
+
+  function addReminder(fireAt: Date) {
+    if (taskId) {
+      savedReminders.addReminder(fireAt);
+    } else {
+      setPendingReminders((prev) => [...prev, { id: crypto.randomUUID(), fireAt }]);
+    }
+  }
+
+  function removeReminder(id: string) {
+    if (taskId) {
+      savedReminders.deleteReminder(id);
+    } else {
+      setPendingReminders((prev) => prev.filter((r) => r.id !== id));
+    }
+  }
 
   const fieldClass = 'w-full rounded-xl border border-ink/20 px-3 py-2 text-base';
 
@@ -61,7 +74,10 @@ export function TaskForm({
     };
     try {
       if (mode === 'create') {
-        await addTask(uid, input);
+        const newId = await addTask(uid, input);
+        for (const reminder of pendingReminders) {
+          await addReminderFn(uid, { taskId: newId, fireAt: reminder.fireAt });
+        }
       } else if (initialTask) {
         await updateTask(uid, initialTask.id, input);
       }
@@ -139,24 +155,14 @@ export function TaskForm({
         rows={3}
       />
 
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-ink/50">Срок (необязательно)</label>
-        <input
-          type="datetime-local"
-          value={deadlineValue}
-          onChange={(e) => setDeadlineValue(e.target.value)}
-          className={fieldClass}
-        />
-      </div>
+      <DateTimePicker value={deadline} onChange={setDeadline} label="Срок (необязательно)" />
 
-      {mode === 'edit' && (
-        <div className="space-y-1.5 rounded-2xl bg-ink/[0.03] p-3">
-          <label className="text-xs font-medium text-ink/50">
-            Напоминания — пришлём push, чтобы не забыть
-          </label>
-          <ReminderPicker deadline={deadline} reminders={reminders} onAdd={addReminder} onRemove={deleteReminder} />
-        </div>
-      )}
+      <div className="space-y-1.5 rounded-2xl bg-ink/[0.03] p-3">
+        <label className="text-xs font-medium text-ink/50">
+          Напоминания — пришлём push, чтобы не забыть
+        </label>
+        <ReminderPicker deadline={deadline} reminders={reminders} onAdd={addReminder} onRemove={removeReminder} />
+      </div>
 
       {error && (
         <p className="rounded-xl bg-terracotta/15 px-3 py-2 text-sm text-ink">

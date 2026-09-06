@@ -6,6 +6,7 @@ import {
   updateTask as updateTaskFn,
   deleteTask as deleteTaskFn,
   setTaskStatus as setTaskStatusFn,
+  setSubtaskStatus as setSubtaskStatusFn,
   closeEpicWithSubtasks,
   type NewTaskInput,
 } from '../firebase/tasks';
@@ -23,6 +24,7 @@ export function useTasks(uid: string) {
     updateTask: (taskId: string, changes: Partial<NewTaskInput>) => updateTaskFn(uid, taskId, changes),
     deleteTask: (taskId: string) => deleteTaskFn(uid, taskId, tasks),
     setTaskStatus: (taskId: string, status: TaskStatus) => setTaskStatusFn(uid, taskId, status),
+    setSubtaskStatus: (subtaskId: string, status: TaskStatus) => setSubtaskStatusFn(uid, tasks, subtaskId, status),
     closeEpic: (epicId: string) => closeEpicWithSubtasks(uid, epicId, tasks),
   };
 }

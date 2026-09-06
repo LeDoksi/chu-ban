@@ -47,6 +47,16 @@ describe('computeMilestones', () => {
     expect(result.hasClosedEpic).toBe(true);
   });
 
+  it('excludes subtasks from the completed count', () => {
+    const tasks = [
+      makeTask({ id: 'epic-1', type: 'epic', status: 'done' }),
+      makeTask({ id: 'sub-1', parentEpicId: 'epic-1', status: 'done' }),
+      makeTask({ id: 'sub-2', parentEpicId: 'epic-1', status: 'done' }),
+    ];
+    const result = computeMilestones(tasks);
+    expect(result.totalCompleted).toBe(1);
+  });
+
   it('reports no reached thresholds when nothing is completed', () => {
     const result = computeMilestones([]);
     expect(result.totalCompleted).toBe(0);
