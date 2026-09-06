@@ -26,7 +26,11 @@ export function loadOneSignal(): void {
   if (document.getElementById('onesignal-sdk')) return;
   const script = document.createElement('script');
   script.id = 'onesignal-sdk';
-  script.src = 'https://cdn.onesignal.com/sdks/OneSignalSDK.page.js';
+  // Unversioned cdn.onesignal.com/sdks/OneSignalSDK.page.js 404s now — OneSignal
+  // moved the Web SDK under a versioned path. Same for the worker-side import
+  // in sw.ts. This was the actual reason "Включить уведомления" hung forever:
+  // the script never loaded, so window.OneSignalDeferred never drained.
+  script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
   script.defer = true;
   document.head.appendChild(script);
 
