@@ -55,7 +55,7 @@ export function TaskForm({
         parentEpicId,
       });
       for (const reminder of pendingReminders) {
-        await addReminderFn(uid, { taskId: newId, fireAt: reminder.fireAt });
+        await addReminderFn(uid, { taskId: newId, fireAt: reminder.fireAt, title: title.trim() });
       }
       onDone();
     } catch (err) {

@@ -13,6 +13,7 @@ import {
 import { db } from './config';
 import type { Task, TaskStatus, TaskType } from '../types';
 import { subtaskIdsToClose, subtaskIdsOf } from '../lib/epicCascade';
+import { cancelRemindersForTask } from './reminders';
 
 export interface NewTaskInput {
   type: TaskType;
@@ -74,6 +75,7 @@ export async function updateTask(uid: string, taskId: string, changes: Partial<N
 
 export async function deleteTask(uid: string, taskId: string, allTasks: Task[]): Promise<void> {
   const subtaskIds = subtaskIdsOf(allTasks, taskId);
+  await Promise.all([taskId, ...subtaskIds].map((id) => cancelRemindersForTask(uid, id)));
   if (subtaskIds.length === 0) {
     await deleteDoc(doc(db, 'users', uid, 'tasks', taskId));
     return;
@@ -87,6 +89,7 @@ export async function deleteTask(uid: string, taskId: string, allTasks: Task[]):
 }
 
 export async function setTaskStatus(uid: string, taskId: string, status: TaskStatus): Promise<void> {
+  if (status === 'done') await cancelRemindersForTask(uid, taskId);
   await updateDoc(doc(db, 'users', uid, 'tasks', taskId), {
     status,
     completedAt: status === 'done' ? Timestamp.now() : null,
@@ -100,6 +103,7 @@ export async function setSubtaskStatus(
   status: TaskStatus
 ): Promise<void> {
   const subtask = allTasks.find((t) => t.id === subtaskId);
+  if (status === 'done') await cancelRemindersForTask(uid, subtaskId);
   const batch = writeBatch(db);
   const now = Timestamp.now();
   batch.update(doc(db, 'users', uid, 'tasks', subtaskId), {
@@ -119,10 +123,12 @@ export async function setSubtaskStatus(
 }
 
 export async function closeEpicWithSubtasks(uid: string, epicId: string, allTasks: Task[]): Promise<void> {
+  const subtaskIds = subtaskIdsToClose(allTasks, epicId);
+  await Promise.all([epicId, ...subtaskIds].map((id) => cancelRemindersForTask(uid, id)));
   const batch = writeBatch(db);
   const now = Timestamp.now();
   batch.update(doc(db, 'users', uid, 'tasks', epicId), { status: 'done', completedAt: now });
-  for (const subtaskId of subtaskIdsToClose(allTasks, epicId)) {
+  for (const subtaskId of subtaskIds) {
     batch.update(doc(db, 'users', uid, 'tasks', subtaskId), { status: 'done', completedAt: now });
   }
   await batch.commit();

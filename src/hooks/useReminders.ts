@@ -6,7 +6,7 @@ import {
   deleteReminder as deleteReminderFn,
 } from '../firebase/reminders';
 
-export function useReminders(uid: string, taskId: string | null) {
+export function useReminders(uid: string, taskId: string | null, title: string) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
   useEffect(() => {
@@ -19,7 +19,10 @@ export function useReminders(uid: string, taskId: string | null) {
 
   return {
     reminders,
-    addReminder: (fireAt: Date) => addReminderFn(uid, { taskId: taskId!, fireAt }),
-    deleteReminder: (reminderId: string) => deleteReminderFn(uid, reminderId),
+    addReminder: (fireAt: Date) => addReminderFn(uid, { taskId: taskId!, fireAt, title }),
+    deleteReminder: (reminderId: string) => {
+      const reminder = reminders.find((r) => r.id === reminderId);
+      return deleteReminderFn(reminderId, reminder?.notificationId ?? '');
+    },
   };
 }

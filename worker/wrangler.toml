@@ -1,0 +1,9 @@
+name = "chuban-reminders"
+main = "src/index.js"
+compatibility_date = "2026-09-07"
+
+[vars]
+ONESIGNAL_APP_ID = "fbad1062-1f82-43fd-8b02-9478221b99a6"
+
+# Set with `wrangler secret put ONESIGNAL_REST_API_KEY` and
+# `wrangler secret put WORKER_SHARED_SECRET` — never commit real secrets here.

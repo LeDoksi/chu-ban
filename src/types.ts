@@ -30,7 +30,9 @@ export interface Reminder {
   uid: string;
   taskId: string;
   fireAt: Date;
-  sent: boolean;
+  // OneSignal notification id for the already-scheduled push — needed to
+  // cancel it (task deleted/completed/reminder removed) before it fires.
+  notificationId: string;
   createdAt: Date;
 }
 

@@ -47,7 +47,7 @@ export function TaskDetailView({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sphere = spheres.find((s) => s.id === task.sphereId);
-  const { reminders, addReminder, deleteReminder } = useReminders(uid, task.id);
+  const { reminders, addReminder, deleteReminder } = useReminders(uid, task.id, task.title);
 
   useEffect(() => {
     if (editingField !== 'title') setTitleDraft(task.title);
