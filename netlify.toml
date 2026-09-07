@@ -1,3 +1,7 @@
 [build]
   functions = "netlify/functions"
   publish = "public"
+
+# Netlify Function env vars are baked in at deploy time — bump this
+# comment (or touch any file) to force a redeploy after changing them
+# via the dashboard/API without a real code change.
