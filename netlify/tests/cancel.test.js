@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import cancel from './cancel.js';
+import cancel from '../functions/cancel.js';
 
 const SECRET = 'shh';
 

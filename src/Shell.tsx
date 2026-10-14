@@ -21,7 +21,7 @@ import {
 } from './onesignal/init';
 
 type EditorState =
-  | { mode: 'create'; parentEpicId: string | null; defaultDeadline: Date | null }
+  | { mode: 'create'; parentEpicId: string | null; defaultDeadline: Date | null; defaultSphereId: string | null }
   | { mode: 'edit'; taskId: string };
 
 export function Shell({ uid }: { uid: string }) {
@@ -47,11 +47,14 @@ export function Shell({ uid }: { uid: string }) {
     loginOneSignal(uid);
   }, [uid]);
 
-  const openCreate = (parentEpicId: string | null = null) => {
-    // ponytail: creating a subtask defaults its deadline to the epic's own —
-    // matches the epic's timeline unless she deliberately changes it.
-    const defaultDeadline = parentEpicId ? tasks.find((t) => t.id === parentEpicId)?.deadline ?? null : null;
-    setEditor({ mode: 'create', parentEpicId, defaultDeadline });
+  const openCreate = (parentEpicId: string | null = null, filterSphereId: string | null = null) => {
+    // ponytail: creating a subtask defaults its deadline and sphere to the
+    // epic's own — matches the epic unless she deliberately changes it.
+    // A top-level task picks up the sphere the list is currently filtered by.
+    const epic = parentEpicId ? tasks.find((t) => t.id === parentEpicId) : undefined;
+    const defaultDeadline = epic?.deadline ?? null;
+    const defaultSphereId = epic?.sphereId ?? filterSphereId;
+    setEditor({ mode: 'create', parentEpicId, defaultDeadline, defaultSphereId });
   };
   const openEdit = (task: Task) => setEditor({ mode: 'edit', taskId: task.id });
   const closeEditor = () => setEditor(null);
@@ -128,6 +131,7 @@ export function Shell({ uid }: { uid: string }) {
             spheres={spheres}
             parentEpicId={editor.parentEpicId}
             defaultDeadline={editor.defaultDeadline}
+            defaultSphereId={editor.defaultSphereId}
             onDone={closeEditor}
           />
         </Modal>
