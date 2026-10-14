@@ -10,16 +10,20 @@ export function TaskForm({
   spheres,
   parentEpicId,
   defaultDeadline = null,
+  defaultSphereId = null,
   onDone,
 }: {
   uid: string;
   spheres: Sphere[];
   parentEpicId: string | null;
   defaultDeadline?: Date | null;
+  defaultSphereId?: string | null;
   onDone: () => void;
 }) {
   const [type, setType] = useState<TaskType>('task');
-  const [sphereId, setSphereId] = useState(spheres[0]?.id ?? '');
+  const [sphereId, setSphereId] = useState(
+    (defaultSphereId && spheres.some((s) => s.id === defaultSphereId) ? defaultSphereId : spheres[0]?.id) ?? ''
+  );
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState<Date | null>(defaultDeadline);

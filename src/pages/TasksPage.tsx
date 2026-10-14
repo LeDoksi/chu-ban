@@ -13,7 +13,7 @@ export function TasksPage({
 }: {
   tasks: Task[];
   spheres: Sphere[];
-  onOpenCreate: (parentEpicId: string | null) => void;
+  onOpenCreate: (parentEpicId: string | null, sphereId: string | null) => void;
   onOpenEdit: (task: Task) => void;
   onToggleDone: (taskId: string, status: TaskStatus) => void;
   onToggleSubtask: (subtaskId: string, status: TaskStatus) => void;
@@ -64,7 +64,7 @@ export function TasksPage({
                 onOpen={() => onOpenEdit(subtask)}
               />
             ))}
-            <button onClick={() => onOpenCreate(task.id)} className="text-xs font-medium text-sage">
+            <button onClick={() => onOpenCreate(task.id, null)} className="text-xs font-medium text-sage">
               + Подзадача
             </button>
           </div>
@@ -76,7 +76,7 @@ export function TasksPage({
   return (
     <div className="space-y-4">
       <button
-        onClick={() => onOpenCreate(null)}
+        onClick={() => onOpenCreate(null, sphereFilter)}
         className="w-full rounded-2xl border-2 border-dashed border-sage/40 py-3 text-sm font-medium text-sage"
       >
         + Новая задача
