@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import schedule from './schedule.js';
+import schedule from '../functions/schedule.js';
 
 const SECRET = 'shh';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { corsHeaders, json, checkSecret } from './_shared.js';
+import { corsHeaders, json, checkSecret } from '../functions/_shared.js';
 
 describe('corsHeaders', () => {
   it('allows the deployed origin and the worker-secret header', () => {
